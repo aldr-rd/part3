@@ -1,0 +1,1 @@
+GET https://phonebook-floral-pond-3006.fly.dev/api/persons
