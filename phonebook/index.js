@@ -47,7 +47,7 @@ app.get('/api/persons/:id', (request, response, next) => {
 
 app.delete('/api/persons/:id', (request, response, next) => {
     Person.findByIdAndDelete(request.params.id)
-        .then(result => {
+        .then(() => {
             response.status(204).end()
         })
         .catch(error => next(error))
@@ -61,14 +61,18 @@ app.put('/api/persons/:id', (request, response, next) => {
         number: body.number
     }
 
-    Person.findByIdAndUpdate(request.params.id, person, { new: true, runValidators: true, context: 'query' })
+    Person.findByIdAndUpdate(
+        request.params.id,
+        person,
+        { new: true, runValidators: true, context: 'query' }
+    )
         .then(updatedPerson => {
             response.json(updatedPerson)
         })
         .catch(error => next(error))
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body
 
     if (!body.name || !body.number) {
@@ -77,22 +81,27 @@ app.post('/api/persons', (request, response) => {
         })
     }
 
-    Person.findOne({ name: body.name }).then(nameExists => {
-        if (nameExists) {
-            return response.status(400).json({
-                error: 'name must be unique'
+    Person.findOne({ name: body.name })
+        .then(nameExists => {
+            if (nameExists) {
+                return response.status(400).json({
+                    error: 'name must be unique'
+                })
+            }
+
+            const person = new Person({
+                name: body.name,
+                number: body.number
             })
-        }
 
-        const person = new Person({
-            name: body.name,
-            number: body.number
+            return person.save()
         })
-
-        person.save().then(savedPerson => {
-            response.json(savedPerson)
+        .then(savedPerson => {
+            if (savedPerson) {
+                response.json(savedPerson)
+            }
         })
-    })
+        .catch(error => next(error))
 })
 
 const unknownEndpoint = (request, response) => {
